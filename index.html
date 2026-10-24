@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#faf9f5">
+  <meta name="color-scheme" content="light">
   <title>埋線預約表單｜瑞恩中醫</title>
   <style>
     * { box-sizing: border-box; }
@@ -78,19 +79,22 @@
     .birth-trigger { width:100%; text-align:left; border:1px solid #ced6c9; border-radius:10px; background:white; color:#304a38; font-size:16px; }
     .birth-trigger::after { content:'▦'; float:right; color:#85967d; }
     .birth-trigger[aria-invalid=true] { border-color:#ae5836; }
-    .birthday-dialog { width:min(600px,calc(100% - 28px)); max-height:calc(100svh - 28px); padding:32px 24px 24px; border:0; border-radius:32px; background:#fffdfa; color:#3c2b1e; text-align:center; box-shadow:0 26px 80px #26170b33; }
+    .birthday-dialog { color-scheme:only light; isolation:isolate; width:min(600px,calc(100% - 28px)); max-height:calc(100svh - 28px); padding:32px 24px 24px; border:0; border-radius:32px; background:#fffdfa; color:#3c2b1e; text-align:center; box-shadow:0 26px 80px #26170b33; }
     .birthday-dialog::backdrop { background:rgba(24,20,16,.76); backdrop-filter:blur(6px); }
     .birthday-dialog h2 { margin:0 0 12px; font-size:26px; color:#3c2b1e; }
     .birthday-dialog .birthday-help { margin:0 0 24px; color:#65513f; font-size:16px; line-height:1.9; }
     .birthday-wheels { position:relative; display:grid; grid-template-columns:1.4fr 1fr 1fr; height:270px; background:#faf8f5; border-radius:24px; overflow:hidden; }
-    .birthday-band { position:absolute; top:108px; left:10px; right:10px; height:54px; border:2px solid #9d7b58; border-radius:12px; background:#e8dccd; pointer-events:none; }
-    .birthday-wheel { position:relative; overflow-y:auto; overscroll-behavior:contain; scroll-snap-type:y mandatory; scrollbar-width:none; padding:108px 0; height:270px; outline-offset:-3px; mask-image:none; }
+    .birthday-band { z-index:0; position:absolute; top:108px; left:10px; right:10px; height:54px; border:2px solid #9d7b58; border-radius:12px; background:#e8dccd; pointer-events:none; }
+    .birthday-wheel { z-index:1; position:relative; overflow-y:auto; overscroll-behavior:contain; scroll-snap-type:y mandatory; scrollbar-width:none; padding:108px 0; height:270px; outline-offset:-3px; -webkit-mask-image:none !important; mask-image:none !important; }
     .birthday-wheel::-webkit-scrollbar { display:none; }
     .birthday-row { height:54px; display:flex; justify-content:center; align-items:center; scroll-snap-align:center; color:#695747; font-size:23px; cursor:pointer; user-select:none; }
-    .birthday-row.selected { color:#3c2b1e; font-weight:700; font-size:26px; }
+    .birthday-row.selected { background:#593417 !important; color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; font-weight:700; font-size:26px; border-radius:8px; }
     .birthday-dialog .birthday-preview { margin:20px 0; font-size:20px; font-weight:700; color:#754725; }
     .birthday-actions { display:grid; grid-template-columns:1fr 1.4fr; gap:12px; }
     .birthday-actions button { min-height:64px; border-radius:18px; font-size:20px; font-weight:700; }
+    .birthday-dialog button { -webkit-appearance:none; appearance:none; -webkit-text-fill-color:currentColor; }
+    .birthday-dialog .birthday-wheel { background:transparent !important; }
+    .birthday-dialog .birthday-row { opacity:1 !important; -webkit-text-fill-color:currentColor; }
     .birthday-cancel { background:#ece6de; color:#554334; }
     .birthday-confirm { background:#704522; color:white; }
     .birthday-dialog .birthday-error { color:#a34b2e; margin:0 0 14px; font-size:14px; }

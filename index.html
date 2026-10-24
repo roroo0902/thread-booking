@@ -144,9 +144,60 @@ window.BOOKING_CONFIG = Object.freeze({
 
 </script>
   <script>
-(() => {
+// Only public presentation settings are returned by GAS; patient sheets are never exposed.
+window.loadBookingSettings = async function () {
+  const response=await fetch(window.BOOKING_CONFIG.apiUrl+'?action=config&t='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(25000)});
+  const result=await response.json();
+  if(!response.ok||!result.ok||!result.config?.questions)throw new Error('表單設定暫時無法讀取，請稍後重新整理。');
+  const config=result.config, s=config.settings, yes=v=>String(v).toUpperCase()==='TRUE';
+  const text=(selector,value)=>{const e=document.querySelector(selector);if(e&&value!==undefined)e.textContent=value;};
+  text('#welcomeTitle',s.page_title);text('#bookingPage > h1',s.page_title);text('.brand',s.clinic_name);
+  text('#bookingPage > .subtitle',s.page_subtitle);text('#send',s.submit_text);
+  text('#success h2',s.success_title);text('#success p',s.success_message);
+  document.title=(s.page_title||'埋線預約')+'｜'+(s.clinic_name||'瑞恩中醫');
+  const imageURL=value=>{try{const u=new URL(value);return u.protocol==='https:'?u.href:'';}catch{return '';}};
+  if(imageURL(s.hero_image_url))document.querySelector('#welcome img').src=imageURL(s.hero_image_url);
+  if(imageURL(s.logo_url)){const img=document.createElement('img');img.src=imageURL(s.logo_url);img.alt=s.clinic_name||'診所';img.style.cssText='max-width:120px;max-height:90px';document.querySelector('.brand').before(img);}
+  document.querySelectorAll('#bookingPage > .note,#bookingPage > .health').forEach(e=>e.remove());
+  const form=document.querySelector('form'), notices=document.createElement('div');notices.id='announcements';
+  for(const a of config.announcements){const box=document.createElement('section'),title=document.createElement('strong'),body=document.createElement('p');box.className=a.type==='warning'?'note notice':'note';title.textContent=a.title;body.textContent=a.text;body.style.whiteSpace='pre-wrap';body.style.margin='6px 0 0';if(a.bold)body.style.fontWeight='600';box.append(title,body);notices.append(box);}
+  form.before(notices);
+  const consent=form.querySelector('.consent');form.querySelectorAll('.card').forEach(e=>e.remove());
+  const card=document.createElement('section');card.className='card';const heading=document.createElement('h2');heading.textContent='預約資料';card.append(heading);
+  const limits={name:60,birth:7,phone:10,date:10,session:30,medicine:40,lineName:100,notes:1000};
+  for(const q of config.questions){
+    if(q.id==='userId')continue;
+    const visible=q.visible&&(q.id!=='lineName'||yes(s.show_line_name));
+    const wrap=document.createElement(q.type==='radio'?'fieldset':'div');wrap.hidden=!visible;
+    const label=document.createElement(q.type==='radio'?'legend':'label');label.textContent=q.label+(q.required&&visible?' *':'');if(q.type!=='radio')label.htmlFor=q.id;wrap.append(label);
+    if(q.type==='radio'){
+      const options=document.createElement('div');options.className='options vertical';
+      for(const o of config.options.filter(o=>o.id===q.id)){const l=document.createElement('label'),input=document.createElement('input');input.type='radio';input.name=q.id;input.value=o.value;input.required=q.required&&visible;input.disabled=!visible;l.append(input,document.createTextNode(o.label));options.append(l);}wrap.append(options);
+    }else{
+      const input=document.createElement(q.type==='textarea'?'textarea':'input');input.name=q.id;input.id=q.id;
+      if(q.type!=='textarea')input.type=q.type==='readonly'?'text':q.type;
+      input.readOnly=q.type==='readonly';input.required=q.required&&visible;input.disabled=!visible&&q.id!=='lineName';input.placeholder=q.placeholder;input.maxLength=limits[q.id];
+      if(q.id==='phone'){input.pattern='09[0-9]{8}';input.inputMode='tel';}if(q.id==='birth')input.inputMode='numeric';
+      wrap.append(input);
+    }
+    if(q.hint){const hint=document.createElement('small');hint.textContent=q.hint;wrap.append(hint);}card.append(wrap);
+  }
+  const identity=document.createElement('div');identity.id='lineIdentity';identity.hidden=!yes(s.show_userid);
+  const idLabel=document.createElement('label');idLabel.htmlFor='lineOpenId';idLabel.textContent='LINE OpenID';const idInput=document.createElement('input');idInput.id='lineOpenId';idInput.readOnly=true;identity.append(idLabel,idInput);card.append(identity);
+  const login=document.createElement('button');login.id='lineLogin';login.type='button';login.hidden=true;
+  const message=document.createElement('p');message.id='message';message.setAttribute('role','status');card.append(login,message);consent.before(card);
+  if(!yes(s.form_enabled))throw new Error(s.disabled_message||'目前暫停接受埋線預約');
+  return config;
+};
+
+</script>
+  <script>
+(async () => {
   'use strict';
-  const cfg = window.BOOKING_CONFIG, form = document.querySelector('form');
+  let control;
+  try { control=await window.loadBookingSettings(); }
+  catch(error){document.getElementById('welcomeStatus').textContent=error.message;document.getElementById('welcomeLoading').hidden=true;const retry=document.getElementById('retryLogin');retry.hidden=false;retry.textContent='重新讀取表單';retry.onclick=()=>location.reload();return;}
+  const cfg = {...window.BOOKING_CONFIG,closedDates:control.closedDates,closedWeekdays:control.closedWeekdays}, form = document.querySelector('form');
   const message = document.getElementById('message'), date = form.elements.date, birth = form.elements.birth;
   const review = document.getElementById('review'), send = document.getElementById('send');
   let payload, busy = false, receiptId = crypto.randomUUID();
@@ -160,14 +211,15 @@ window.BOOKING_CONFIG = Object.freeze({
     date.setCustomValidity(date.value && (date.value < date.min || cfg.closedWeekdays.includes(d.getUTCDay()) || cfg.closedDates.includes(date.value)) ? '請選擇至少明天起、非週六及非休診日的日期。' : '');
     const m = birth.value.match(/^(\d{2,3})(\d{2})(\d{2})$/); let valid=false;
     if (m) { const y=Number(m[1])+1911, mo=Number(m[2]), day=Number(m[3]), b=new Date(Date.UTC(y,mo-1,day)); valid=Number(m[1])>0 && b.getUTCFullYear()===y && b.getUTCMonth()===mo-1 && b.getUTCDate()===day && b.toISOString().slice(0,10)<=today(); }
-    birth.setCustomValidity(valid ? '' : '請填寫有效的民國生日，例如 770101 或 1000101。');
-    form.elements.name.setCustomValidity(form.elements.name.value.trim() ? '' : '請填寫姓名。');
+    birth.setCustomValidity(valid || !birth.value&&!birth.required ? '' : '請填寫有效的民國生日，例如 770101 或 1000101。');
+    form.elements.name.setCustomValidity(form.elements.name.value.trim() || !form.elements.name.required ? '' : '請填寫姓名。');
   }
   form.addEventListener('input',()=>{validate();message.textContent='';});
   form.addEventListener('submit',e=>{
     e.preventDefault();validate();if(!form.reportValidity())return;
     payload=Object.fromEntries(new FormData(form));payload.requestId=receiptId;
-    const labels={name:'姓名',birth:'民國生日',phone:'手機',date:'預約日期',medicine:'拿藥需求',session:'時段',lineName:'LINE 名稱',notes:'備註'};
+    for(const key of ['name','birth','phone','date','session','medicine','lineName','notes'])payload[key]=payload[key]||'';
+    const labels=Object.fromEntries(control.questions.filter(q=>q.visible&&q.id!=='userId'&&(q.id!=='lineName'||String(control.settings.show_line_name).toUpperCase()==='TRUE')).map(q=>[q.id,q.label]));
     const summary=document.getElementById('summary');summary.replaceChildren();
     for(const [key,label] of Object.entries(labels)){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=payload[key]||'未填寫';summary.append(dt,dd);}
     document.getElementById('reviewStatus').textContent='';review.showModal();
@@ -183,9 +235,9 @@ window.BOOKING_CONFIG = Object.freeze({
     try{
       const response=await fetch(cfg.apiUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({...payload,action:'booking',idToken:window.liff.getIDToken()}),signal:AbortSignal.timeout(25000),redirect:'follow'});
       const result=await response.json();
-      if(!response.ok || result.ok!==true || result.requestId!==payload.requestId)throw new Error('未取得有效回覆');
+      if(!response.ok || result.ok!==true || result.requestId!==payload.requestId)throw new Error(result.error||'未取得有效回覆');
       review.close();form.hidden=true;document.getElementById('success').hidden=false;document.getElementById('receipt').textContent='資料收件編號：'+result.requestId;document.getElementById('success').focus();
-    }catch{document.getElementById('reviewStatus').textContent='尚無法確認收件結果。可重試（相同資料不會重複登記），或聯繫診所確認。請勿視為預約成功。';}
+    }catch(error){document.getElementById('reviewStatus').textContent=(control.settings.error_message||'送出未完成')+'：'+error.message+'。請勿視為預約成功；可重試或聯繫診所確認。';}
     finally{busy=false;send.disabled=false;document.getElementById('edit').disabled=false;}
   };
   if(!cfg.apiUrl)document.getElementById('previewNotice').hidden=false;
@@ -212,7 +264,7 @@ window.BOOKING_CONFIG = Object.freeze({
       if(!response.ok||!result.ok||!result.user?.id||!result.user?.name)throw new Error('無法完成身分記錄，請重新讀取或聯繫診所。');
       verifiedUser=result.user;
       document.getElementById('lineOpenId').value=verifiedUser.id;
-      document.getElementById('lineIdentity').hidden=false;
+      document.getElementById('lineIdentity').hidden=String(control.settings.show_userid).toUpperCase()!=='TRUE';
       form.elements.lineName.value=verifiedUser.name;form.elements.lineName.readOnly=true;
       message.textContent='LINE 身分已確認，請填寫預約資料。';
       document.getElementById('welcome').hidden=true;document.getElementById('bookingPage').hidden=false;
@@ -226,5 +278,4 @@ window.BOOKING_CONFIG = Object.freeze({
 </script>
 </body>
 </html>
-
 

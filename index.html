@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#faf9f5">
+  <title>埋線預約表單｜瑞恩中醫</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: #faf9f5; }
+    body { min-height: 100svh; display: grid; place-items: center; padding: 32px 22px; font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", "Microsoft JhengHei", sans-serif; color: #35694b; }
+    main { width: 100%; max-width: 420px; text-align: center; }
+    .brand { margin: 0 0 22px; font-size: 14px; letter-spacing: 5px; color: #657c6c; }
+    .illustration { width: 330px; max-width: 76vw; height: auto; animation: floatIcon 1.8s ease-in-out infinite; filter: drop-shadow(0 14px 20px #00000012); }
+    h1 { margin: 24px 0 12px; font-size: 28px; font-weight: 700; letter-spacing: 2px; }
+    .subtitle { margin: 0; font-size: 18px; color: #707570; letter-spacing: 1px; line-height: 1.7; }
+    .wave-dots { display: flex; justify-content: center; gap: 9px; height: 25px; margin: 18px 0; align-items: center; }
+    .wave-dots span { width: 9px; height: 9px; background: #4f8a63; border-radius: 50%; animation: waveDot 1.2s ease-in-out infinite; }
+    .wave-dots span:nth-child(2) { animation-delay: .15s; }
+    .wave-dots span:nth-child(3) { animation-delay: .3s; }
+    .note { margin: 22px 0; padding: 16px; border-radius: 16px; background: #edf1e9; font-size: 14px; line-height: 1.9; color: #546550; }
+    .open-form { display: block; padding: 15px 20px; border-radius: 12px; background: #35694b; color: white; text-decoration: none; font-size: 17px; font-weight: 600; }
+    .open-form:hover { background: #28533b; }
+    .open-form:focus-visible { outline: 3px solid #b38a45; outline-offset: 4px; }
+    .footnote { margin: 16px 0 0; color: #777; font-size: 13px; line-height: 1.8; }
+    [hidden] { display: none !important; }
+    @keyframes floatIcon { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+    @keyframes waveDot { 0%, 60%, 100% { transform: translateY(0); opacity: .45; } 30% { transform: translateY(-9px); opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; } }
+    @media (max-height: 700px) { .illustration { width: 230px; } .brand { margin-bottom: 12px; } h1 { margin-top: 14px; } }
+    body { padding: 40px 20px; }
+    main { max-width: 680px; }
+    .illustration { width: 160px; max-height: 135px; }
+    h1 { margin-top: 10px; font-size: 32px; }
+    .brand { margin-bottom: 12px; }
+    .intro { color: #7a8277; font-size: 14px; margin-bottom: 28px; }
+    .note { text-align: left; padding: 22px 26px; }
+    .note strong { display: inline-block; margin-bottom: 5px; color: #35694b; font-size: 17px; }
+    .notice { background: #fff3d8; color: #7b5b24; padding: 14px; border-radius: 12px; line-height: 1.6; font-size: 14px; }
+    .health { text-align: left; margin: 20px 0 30px; color: #5d675b; font-size: 14px; line-height: 1.8; }
+    summary { cursor: pointer; font-weight: 600; }
+    form { text-align: left; }
+    .card { background: #fffefa; border: 1px solid #e4e7db; border-radius: 22px; padding: 28px; margin: 20px 0; box-shadow: 0 6px 24px #314a3505; }
+    h2 { font-size: 20px; margin: 0 0 22px; color: #35694b; }
+    h2 span { font-size: 14px; font-weight: 500; color: #88997e; margin-right: 8px; }
+    label,legend { font-size: 15px; font-weight: 600; color: #3c4d3d; }
+    label:not(.consent) { display: block; margin: 18px 0 8px; }
+    input:not([type=radio]):not([type=checkbox]),textarea { width: 100%; padding: 14px; font: inherit; font-size: 16px; color: #304a38; background: #fff; border: 1px solid #ced6c9; border-radius: 10px; min-height: 50px; }
+    textarea { resize: vertical; }
+    input:focus-visible,textarea:focus-visible,button:focus-visible,summary:focus-visible { outline: 3px solid #b5c9a5; outline-offset: 3px; }
+    small,.hint { display: block; color: #727b6d; font-size: 12px; line-height: 1.7; margin: 7px 0 0; }
+    .hint { margin-top: -10px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    fieldset { border: 0; padding: 0; margin: 24px 0 0; min-width: 0; }
+    .options { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+    .options label { border: 1px solid #dbe1d5; padding: 13px 15px; border-radius: 10px; margin: 0; font-weight: 400; cursor: pointer; background: white; }
+    .options label:has(input:checked) { border-color: #52795a; background: #edf2e8; }
+    input[type=radio],input[type=checkbox] { accent-color: #35694b; width: 18px; height: 18px; vertical-align: middle; margin: 0 7px 0 0; flex-shrink: 0; }
+    .vertical { flex-direction: column; }
+    em { color: #808779; font-size: 12px; font-style: normal; font-weight: 400; margin-left: 5px; }
+    .consent { display: flex; gap: 8px; margin: 24px 4px; font-size: 13px; font-weight: 400; line-height: 1.9; align-items: flex-start; }
+    .consent input { margin-top: 4px; }
+    button { font: inherit; cursor: pointer; border: 0; border-radius: 12px; padding: 15px 20px; min-height: 48px; }
+    .primary { background: #35694b; color: white; width: 100%; font-size: 16px; font-weight: 600; }
+    .primary:hover { background: #28533b; }
+    .primary span { float: right; }
+    .secondary { background: #edf1e9; color: #35694b; }
+    button:disabled { opacity: .6; cursor: wait; }
+    .footnote { text-align: center; }
+    footer { color: #8a9084; font-size: 12px; line-height: 2; margin-top: 40px; }
+    dialog { width: min(540px,calc(100% - 32px)); max-height: 85svh; overflow: auto; border: 1px solid #dbe1d5; border-radius: 20px; padding: 28px; color: #435340; background: #fffefa; }
+    dialog::backdrop { background: #20382780; }
+    dialog p { line-height: 1.8; font-size: 14px; }
+    dl { display: grid; grid-template-columns: 100px 1fr; gap: 14px; padding: 20px 0; border-top: 1px solid #e1e6db; border-bottom: 1px solid #e1e6db; font-size: 14px; }
+    dt { color: #77816f; } dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .actions { display: flex; gap: 12px; } .actions button { flex: 1; }
+    #reviewStatus { color: #855e29; } #receipt { overflow-wrap: anywhere; }
+    @media(max-width: 520px) { body { padding: 28px 16px; } .card { padding: 22px 18px; } .grid { grid-template-columns: 1fr; gap: 0; } .options { flex-direction: column; } .note { padding: 20px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="brand">瑞恩中醫</p>
+    <svg class="illustration" viewBox="0 0 330 270" role="img" aria-labelledby="artTitle">
+      <title id="artTitle">綠色預約記事板與植物插畫</title>
+      <ellipse cx="165" cy="244" rx="112" ry="12" fill="#e5e7dc"/>
+      <circle cx="165" cy="132" r="113" fill="#e9edde"/>
+      <path d="M263 223Q248 174 284 117M267 184Q299 174 302 147Q273 150 267 184M270 158Q247 143 255 120Q278 132 270 158" fill="#8ca78a"/>
+      <path d="M65 224Q70 196 47 165M61 201Q33 200 30 179Q54 180 61 201" fill="#789975"/>
+      <rect x="86" y="46" width="160" height="188" rx="20" fill="#52795a" transform="rotate(-5 166 140)"/>
+      <rect x="98" y="57" width="136" height="163" rx="12" fill="#fffdf5" transform="rotate(-5 166 140)"/>
+      <rect x="135" y="35" width="60" height="27" rx="10" fill="#a9b994"/>
+      <circle cx="165" cy="39" r="10" fill="#a9b994"/><circle cx="165" cy="39" r="4" fill="#faf9f5"/>
+      <g fill="none" stroke="#6d9068" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m119 103 6 6 12-14M119 139l6 6 12-14M119 175l6 6 12-14"/>
+        <path d="M151 103h48M151 139h48M151 175h30" stroke="#c1ccb4"/>
+      </g>
+      <circle cx="231" cy="207" r="34" fill="#d6b779"/>
+      <path d="m215 207 11 11 21-23" fill="none" stroke="#fffdf5" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <h1>埋線預約</h1>
+    <p class="subtitle">留一點時間，好好照顧自己。</p>
+    <p class="intro">填寫下方資料，安排您的下一次照護。</p>
+    <div id="previewNotice" class="notice" hidden>預覽版｜目前尚未開放線上送出，填寫資料不會傳送。</div>
+    <div class="note"><strong>預約前的小提醒</strong><br>請提前至少 1 天預約，週六無埋線服務。<br>每針 25 元，埋線針數由醫師評估。<br>取消請於預約前一日 21:30 前訊息或來電。</div>
+    <details class="health"><summary>哪些情況需要先由醫師評估？</summary><p>如有以下情況，請先由醫師評估是否適合埋線：</p><ul><li>蟹足腫體質</li><li>容易出血</li><li>皮膚有潰爛或感染</li><li>糖尿病</li><li>有風濕免疫疾病病史</li><li>懷孕中</li></ul></details>
+    <form novalidate>
+      <section class="card"><h2><span>01</span> 基本資料</h2><p class="hint">標示 * 為必填欄位</p>
+        <label for="name">姓名 *</label><input id="name" name="name" autocomplete="name" maxlength="60" required placeholder="請填寫真實姓名">
+        <div class="grid"><div><label for="birth">民國出生年月日 *</label><input id="birth" name="birth" inputmode="numeric" maxlength="7" required placeholder="例如 770101" aria-describedby="birthHint"><small id="birthHint">民國年＋月份＋日期，例如 1000101</small></div><div><label for="phone">手機號碼 *</label><input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" pattern="09[0-9]{8}" maxlength="10" required placeholder="09xxxxxxxx"><small>請輸入 10 碼手機號碼</small></div></div>
+      </section>
+      <section class="card"><h2><span>02</span> 預約安排</h2>
+        <label for="date">預約日期 *</label><input id="date" name="date" type="date" required aria-describedby="dateHint"><small id="dateHint">至少提前一天；週六不提供埋線。其他休診時段請依診所公告。</small>
+        <fieldset><legend>埋線門診時段 *</legend><div class="options"><label><input type="radio" name="session" value="上午" required> 上午</label><label><input type="radio" name="session" value="下午" required> 下午</label><label><input type="radio" name="session" value="晚上(余彬醫師)" required> 晚上（余彬醫師）</label></div></fieldset>
+        <fieldset><legend>是否需要配合拿藥？ *</legend><div class="options vertical"><label><input type="radio" name="medicine" value="埋線+門診拿藥" required> 埋線＋門診拿藥</label><label><input type="radio" name="medicine" value="埋線+不用拿藥" required> 埋線＋不用拿藥</label><label><input type="radio" name="medicine" value="不確定，再與醫師討論" required> 不確定，再與醫師討論</label></div><small>初診、複診如需看診拿藥，皆須另行線上預約門診。</small></fieldset>
+      </section>
+      <section class="card"><h2><span>03</span> 聯繫與備註</h2><button type="button" id="lineLogin" class="secondary" hidden>使用 LINE 帶入顯示名稱</button><p id="message" role="status"></p>
+        <div id="lineIdentity" hidden><label for="lineOpenId">LINE OpenID</label><input id="lineOpenId" readonly autocomplete="off"><small>從登入資料的 sub 取得，目前僅顯示於此頁，不隨預約送出。</small></div>
+        <label for="lineName">LINE 顯示名稱 <em>選填</em></label><input id="lineName" name="lineName" maxlength="100" placeholder="方便我們提供注意事項與說明">
+        <label for="notes">備註 <em>選填</em></label><textarea id="notes" name="notes" rows="4" maxlength="1000" placeholder="有其他需要告訴我們的事情嗎？"></textarea>
+      </section>
+      <label class="consent"><input type="checkbox" name="consent" value="yes" required><span>我已閱讀預約規範，了解此表單不提供門診預約號碼；如需看診拿藥，須另外掛號。我同意診所使用本次填寫資料處理預約及相關聯繫。 *</span></label>
+      <button class="primary" type="submit">確認預約資料 <span aria-hidden="true">→</span></button><p class="footnote">送出前還可以再次確認內容。</p>
+    </form>
+    <section id="success" class="card" tabindex="-1" hidden><h2>已收到您的預約申請</h2><p>資料已送交診所，實際安排以診所確認為準。</p><p id="receipt"></p><p>這不是門診預約號碼。如需看診拿藥，請另行掛號。</p></section>
+    <footer>瑞恩中醫 · 埋線預約<br>用心照護，從每一次相約開始。</footer>
+  </main>
+  <dialog id="review" aria-labelledby="reviewTitle"><h2 id="reviewTitle">確認您的預約資料</h2><p>請檢查姓名、手機與預約日期是否正確。</p><dl id="summary"></dl><p id="reviewStatus" role="status" aria-live="polite"></p><div class="actions"><button type="button" id="edit" class="secondary">返回修改</button><button type="button" id="send" class="primary">確認送出</button></div></dialog>
+  <script>
+window.BOOKING_CONFIG = Object.freeze({
+  liffId: '2011216294-jv8yX5Js',
+  apiUrl: '', // 部署 backend/Code.gs 後的 /exec URL
+  closedDates: [], // YYYY-MM-DD，請同步更新後端
+  closedWeekdays: [6] // 0=週日、6=週六
+});
+
+</script>
+  <script>
+(() => {
+  'use strict';
+  const cfg = window.BOOKING_CONFIG, form = document.querySelector('form');
+  const message = document.getElementById('message'), date = form.elements.date, birth = form.elements.birth;
+  const review = document.getElementById('review'), send = document.getElementById('send');
+  let payload, busy = false, receiptId = crypto.randomUUID();
+  const today = () => new Intl.DateTimeFormat('en-CA', { timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit' }).format(new Date());
+  const minDate = () => { const d = new Date(today()+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+1); return d.toISOString().slice(0,10); };
+  date.min = minDate();
+  function validate() {
+    date.min = minDate(); const d = new Date(date.value+'T00:00:00Z');
+    date.setCustomValidity(date.value && (date.value < date.min || cfg.closedWeekdays.includes(d.getUTCDay()) || cfg.closedDates.includes(date.value)) ? '請選擇至少明天起、非週六及非休診日的日期。' : '');
+    const m = birth.value.match(/^(\d{2,3})(\d{2})(\d{2})$/); let valid=false;
+    if (m) { const y=Number(m[1])+1911, mo=Number(m[2]), day=Number(m[3]), b=new Date(Date.UTC(y,mo-1,day)); valid=Number(m[1])>0 && b.getUTCFullYear()===y && b.getUTCMonth()===mo-1 && b.getUTCDate()===day && b.toISOString().slice(0,10)<=today(); }
+    birth.setCustomValidity(valid ? '' : '請填寫有效的民國生日，例如 770101 或 1000101。');
+    form.elements.name.setCustomValidity(form.elements.name.value.trim() ? '' : '請填寫姓名。');
+  }
+  form.addEventListener('input',()=>{validate();message.textContent='';});
+  form.addEventListener('submit',e=>{
+    e.preventDefault();validate();if(!form.reportValidity())return;
+    payload=Object.fromEntries(new FormData(form));payload.requestId=receiptId;
+    const labels={name:'姓名',birth:'民國生日',phone:'手機',date:'預約日期',medicine:'拿藥需求',session:'時段',lineName:'LINE 名稱',notes:'備註'};
+    const summary=document.getElementById('summary');summary.replaceChildren();
+    for(const [key,label] of Object.entries(labels)){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=payload[key]||'未填寫';summary.append(dt,dd);}
+    document.getElementById('reviewStatus').textContent='';review.showModal();
+  });
+  document.getElementById('edit').onclick=()=>review.close();
+  review.addEventListener('cancel',e=>{if(busy)e.preventDefault();});
+  send.onclick=async()=>{
+    if(busy)return;
+    if(!cfg.apiUrl){document.getElementById('reviewStatus').textContent='目前為預覽版，尚未開放線上送出。資料沒有傳送，請待正式開放後再預約。';return;}
+    busy=true;send.disabled=true;document.getElementById('edit').disabled=true;
+    document.getElementById('reviewStatus').textContent='正在送出，請稍候…';
+    try{
+      const response=await fetch(cfg.apiUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload),signal:AbortSignal.timeout(25000),redirect:'follow'});
+      const result=await response.json();
+      if(!response.ok || result.ok!==true || result.requestId!==payload.requestId)throw new Error('未取得有效回覆');
+      review.close();form.hidden=true;document.getElementById('success').hidden=false;document.getElementById('receipt').textContent='資料收件編號：'+result.requestId;document.getElementById('success').focus();
+    }catch{document.getElementById('reviewStatus').textContent='尚無法確認收件結果。可重試（相同資料不會重複登記），或聯繫診所確認。請勿視為預約成功。';}
+    finally{busy=false;send.disabled=false;document.getElementById('edit').disabled=false;}
+  };
+  if(!cfg.apiUrl)document.getElementById('previewNotice').hidden=false;
+  const login=document.getElementById('lineLogin');
+  let liffReady;
+  const timeout = (promise) => { let timer; return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('timeout')),12000);})]).finally(()=>clearTimeout(timer)); };
+  async function connectLine(interactive){
+    login.disabled=true;
+    try{
+      if(location.protocol!=='https:'){message.textContent='LINE 登入須在已設定的 HTTPS 網站使用；本機預覽可手動填寫。';return;}
+      if(!liffReady)liffReady=(async()=>{
+        if(!window.liff)await timeout(new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://static.line-scdn.net/liff/edge/2/sdk.js';s.onload=resolve;s.onerror=reject;document.head.append(s);}));
+        await timeout(window.liff.init({liffId:cfg.liffId}));
+      })().catch(error=>{liffReady=null;throw error;});
+      await liffReady;
+      if(!window.liff.isLoggedIn()){if(interactive)window.liff.login();return;}
+      const token=window.liff.getDecodedIDToken();
+      // sub 才是 OpenID 的使用者識別碼；不把 profile.userId 假裝成缺少的 sub。
+      let profile=null;
+      try{profile=await timeout(window.liff.getProfile());}catch{/* 仍可顯示已取得的 token 資料。 */}
+      const openid=typeof token?.sub==='string'?token.sub:'';
+      const displayName=typeof profile?.displayName==='string'?profile.displayName:(typeof token?.name==='string'?token.name:'');
+      document.getElementById('lineOpenId').value=openid;
+      document.getElementById('lineIdentity').hidden=false;
+      if(displayName)form.elements.lineName.value=displayName;
+      message.textContent=openid && displayName ? '已取得 OpenID 與 LINE 稱呼。' : !openid ? '未取得 OpenID，請確認 LIFF 已啟用 openid 範圍且已授權。' : '已取得 OpenID，但未取得稱呼，請確認 profile 範圍。';
+    }catch{message.textContent='LINE 連線暫時失敗，請重試或手動填寫名稱。';}
+    finally{login.disabled=false;}
+  }
+  if(cfg.liffId){login.hidden=false;login.textContent='取得 LINE OpenID 與稱呼';login.onclick=()=>connectLine(true);if(location.protocol==='https:')connectLine(false);}
+})();
+
+</script>
+</body>
+</html>
+
+

@@ -79,7 +79,15 @@
   </style>
 </head>
 <body>
-  <main>
+  <section id="welcome" style="width:100%;max-width:480px;text-align:center" aria-labelledby="welcomeTitle">
+    <img src="https://i.ibb.co/PGWYsyG8/1024.jpg" alt="瑞恩中醫埋線預約" style="width:330px;max-width:85%;border-radius:24px" referrerpolicy="no-referrer">
+    <h1 id="welcomeTitle">埋線預約</h1>
+    <p id="welcomeStatus" class="subtitle" role="status">正在準備 LINE 身分確認…</p>
+    <div class="wave-dots" id="welcomeLoading" aria-hidden="true"><span></span><span></span><span></span></div>
+    <p class="footnote">登入後，將記錄您的 LINE 識別碼與稱呼，供診所處理預約及聯繫。</p>
+    <button type="button" id="retryLogin" class="primary" hidden>重新讀取 LINE 身分</button>
+  </section>
+  <main id="bookingPage" hidden>
     <p class="brand">瑞恩中醫</p>
     <svg class="illustration" viewBox="0 0 330 270" role="img" aria-labelledby="artTitle">
       <title id="artTitle">綠色預約記事板與植物插畫</title>
@@ -115,7 +123,7 @@
         <fieldset><legend>是否需要配合拿藥？ *</legend><div class="options vertical"><label><input type="radio" name="medicine" value="埋線+門診拿藥" required> 埋線＋門診拿藥</label><label><input type="radio" name="medicine" value="埋線+不用拿藥" required> 埋線＋不用拿藥</label><label><input type="radio" name="medicine" value="不確定，再與醫師討論" required> 不確定，再與醫師討論</label></div><small>初診、複診如需看診拿藥，皆須另行線上預約門診。</small></fieldset>
       </section>
       <section class="card"><h2><span>03</span> 聯繫與備註</h2><button type="button" id="lineLogin" class="secondary" hidden>使用 LINE 帶入顯示名稱</button><p id="message" role="status"></p>
-        <div id="lineIdentity" hidden><label for="lineOpenId">LINE OpenID</label><input id="lineOpenId" readonly autocomplete="off"><small>從登入資料的 sub 取得，目前僅顯示於此頁，不隨預約送出。</small></div>
+        <div id="lineIdentity" hidden><label for="lineOpenId">LINE OpenID</label><input id="lineOpenId" readonly autocomplete="off"><small>LINE 身分已由後端驗證，作為預約資料的對應依據。</small></div>
         <label for="lineName">LINE 顯示名稱 <em>選填</em></label><input id="lineName" name="lineName" maxlength="100" placeholder="方便我們提供注意事項與說明">
         <label for="notes">備註 <em>選填</em></label><textarea id="notes" name="notes" rows="4" maxlength="1000" placeholder="有其他需要告訴我們的事情嗎？"></textarea>
       </section>
@@ -128,7 +136,7 @@
   <dialog id="review" aria-labelledby="reviewTitle"><h2 id="reviewTitle">確認您的預約資料</h2><p>請檢查姓名、手機與預約日期是否正確。</p><dl id="summary"></dl><p id="reviewStatus" role="status" aria-live="polite"></p><div class="actions"><button type="button" id="edit" class="secondary">返回修改</button><button type="button" id="send" class="primary">確認送出</button></div></dialog>
   <script>
 window.BOOKING_CONFIG = Object.freeze({
-  liffId: '', // 新專案使用新的專用 LIFF；保留既有 LIFF 設定不動
+  liffId: '2011216294-jv8yX5Js',
   apiUrl: '', // 部署 backend/Code.gs 後的 /exec URL
   closedDates: [], // YYYY-MM-DD，請同步更新後端
   closedWeekdays: [6] // 0=週日、6=週六
@@ -142,6 +150,8 @@ window.BOOKING_CONFIG = Object.freeze({
   const message = document.getElementById('message'), date = form.elements.date, birth = form.elements.birth;
   const review = document.getElementById('review'), send = document.getElementById('send');
   let payload, busy = false, receiptId = crypto.randomUUID();
+  let verifiedUser = null;
+  const welcomeStatus=document.getElementById('welcomeStatus'), retryLogin=document.getElementById('retryLogin');
   const today = () => new Intl.DateTimeFormat('en-CA', { timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit' }).format(new Date());
   const minDate = () => { const d = new Date(today()+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+1); return d.toISOString().slice(0,10); };
   date.min = minDate();
@@ -166,11 +176,12 @@ window.BOOKING_CONFIG = Object.freeze({
   review.addEventListener('cancel',e=>{if(busy)e.preventDefault();});
   send.onclick=async()=>{
     if(busy)return;
+    if(!verifiedUser){document.getElementById('reviewStatus').textContent='請先完成 LINE 身分確認。';return;}
     if(!cfg.apiUrl){document.getElementById('reviewStatus').textContent='目前為預覽版，尚未開放線上送出。資料沒有傳送，請待正式開放後再預約。';return;}
     busy=true;send.disabled=true;document.getElementById('edit').disabled=true;
     document.getElementById('reviewStatus').textContent='正在送出，請稍候…';
     try{
-      const response=await fetch(cfg.apiUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload),signal:AbortSignal.timeout(25000),redirect:'follow'});
+      const response=await fetch(cfg.apiUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({...payload,action:'booking',idToken:window.liff.getIDToken()}),signal:AbortSignal.timeout(25000),redirect:'follow'});
       const result=await response.json();
       if(!response.ok || result.ok!==true || result.requestId!==payload.requestId)throw new Error('未取得有效回覆');
       review.close();form.hidden=true;document.getElementById('success').hidden=false;document.getElementById('receipt').textContent='資料收件編號：'+result.requestId;document.getElementById('success').focus();
@@ -182,29 +193,34 @@ window.BOOKING_CONFIG = Object.freeze({
   let liffReady;
   const timeout = (promise) => { let timer; return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('timeout')),12000);})]).finally(()=>clearTimeout(timer)); };
   async function connectLine(interactive){
-    login.disabled=true;
+    login.disabled=true;retryLogin.hidden=true;document.getElementById('welcomeLoading').hidden=false;
     try{
-      if(location.protocol!=='https:'){message.textContent='LINE 登入須在已設定的 HTTPS 網站使用；本機預覽可手動填寫。';return;}
+      if(!cfg.apiUrl)throw new Error('預約服務正在設定中，尚未開放登入。');
+      if(location.protocol!=='https:')throw new Error('請從正式 HTTPS 網址開啟 LINE 登入。');
+      welcomeStatus.textContent='正在讀取 LINE 身分…';
       if(!liffReady)liffReady=(async()=>{
         if(!window.liff)await timeout(new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://static.line-scdn.net/liff/edge/2/sdk.js';s.onload=resolve;s.onerror=reject;document.head.append(s);}));
         await timeout(window.liff.init({liffId:cfg.liffId}));
       })().catch(error=>{liffReady=null;throw error;});
       await liffReady;
-      if(!window.liff.isLoggedIn()){if(interactive)window.liff.login();return;}
-      const token=window.liff.getDecodedIDToken();
-      // sub 才是 OpenID 的使用者識別碼；不把 profile.userId 假裝成缺少的 sub。
-      let profile=null;
-      try{profile=await timeout(window.liff.getProfile());}catch{/* 仍可顯示已取得的 token 資料。 */}
-      const openid=typeof token?.sub==='string'?token.sub:'';
-      const displayName=typeof profile?.displayName==='string'?profile.displayName:(typeof token?.name==='string'?token.name:'');
-      document.getElementById('lineOpenId').value=openid;
+      if(!window.liff.isLoggedIn()){welcomeStatus.textContent='即將前往 LINE 登入';window.liff.login();return;}
+      const idToken=window.liff.getIDToken();
+      if(!idToken)throw new Error('未取得登入資料，請確認 openid 授權。');
+      welcomeStatus.textContent='正在確認身分並記錄使用者資料…';
+      const response=await fetch(cfg.apiUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'login',idToken}),signal:AbortSignal.timeout(25000),redirect:'follow'});
+      const result=await response.json();
+      if(!response.ok||!result.ok||!result.user?.id||!result.user?.name)throw new Error('無法完成身分記錄，請重新讀取或聯繫診所。');
+      verifiedUser=result.user;
+      document.getElementById('lineOpenId').value=verifiedUser.id;
       document.getElementById('lineIdentity').hidden=false;
-      if(displayName)form.elements.lineName.value=displayName;
-      message.textContent=openid && displayName ? '已取得 OpenID 與 LINE 稱呼。' : !openid ? '未取得 OpenID，請確認 LIFF 已啟用 openid 範圍且已授權。' : '已取得 OpenID，但未取得稱呼，請確認 profile 範圍。';
-    }catch{message.textContent='LINE 連線暫時失敗，請重試或手動填寫名稱。';}
-    finally{login.disabled=false;}
+      form.elements.lineName.value=verifiedUser.name;form.elements.lineName.readOnly=true;
+      message.textContent='LINE 身分已確認，請填寫預約資料。';
+      document.getElementById('welcome').hidden=true;document.getElementById('bookingPage').hidden=false;
+    }catch(error){welcomeStatus.textContent=error.message==='timeout'?'LINE 連線逾時，請重新讀取。':error.message;retryLogin.hidden=false;}
+    finally{login.disabled=false;document.getElementById('welcomeLoading').hidden=true;}
   }
-  if(cfg.liffId){login.hidden=false;login.textContent='取得 LINE OpenID 與稱呼';login.onclick=()=>connectLine(true);if(location.protocol==='https:')connectLine(false);}
+  retryLogin.onclick=()=>connectLine(true);
+  if(cfg.liffId){login.onclick=()=>connectLine(true);connectLine(false);}
 })();
 
 </script>

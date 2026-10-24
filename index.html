@@ -47,6 +47,11 @@
     label:not(.consent) { display: block; margin: 18px 0 8px; }
     input:not([type=radio]):not([type=checkbox]),textarea { width: 100%; padding: 14px; font: inherit; font-size: 16px; color: #304a38; background: #fff; border: 1px solid #ced6c9; border-radius: 10px; min-height: 50px; }
     textarea { resize: vertical; }
+    .birth-picker { display:grid; grid-template-columns:1.35fr 1fr 1fr; gap:10px; }
+    .birth-picker label { margin:4px 0 8px !important; font-size:13px; color:#727b6d; }
+    .birth-picker select { width:100%; height:180px; padding:5px; border:1px solid #ced6c9; border-radius:12px; background:#fff; color:#304a38; font:inherit; font-size:16px; }
+    .birth-picker option { padding:8px 4px; min-height:32px; text-align:center; }
+    .birth-picker select:focus-visible { outline:3px solid #b5c9a5; outline-offset:3px; }
     input:focus-visible,textarea:focus-visible,button:focus-visible,summary:focus-visible { outline: 3px solid #b5c9a5; outline-offset: 3px; }
     small,.hint { display: block; color: #727b6d; font-size: 12px; line-height: 1.7; margin: 7px 0 0; }
     .hint { margin-top: -10px; }
@@ -170,7 +175,33 @@ window.loadBookingSettings = async function () {
     const visible=q.visible&&(q.id!=='lineName'||yes(s.show_line_name));
     const wrap=document.createElement(q.type==='radio'?'fieldset':'div');wrap.hidden=!visible;
     const label=document.createElement(q.type==='radio'?'legend':'label');label.textContent=q.label+(q.required&&visible?' *':'');if(q.type!=='radio')label.htmlFor=q.id;wrap.append(label);
-    if(q.type==='radio'){
+    if(q.id==='birth'){
+      label.htmlFor='birth-year';
+      const value=document.createElement('input');value.type='hidden';value.id='birth';value.name='birth';value.disabled=!visible;wrap.append(value);
+      const picker=document.createElement('div');picker.className='birth-picker';picker.setAttribute('role','group');picker.setAttribute('aria-label',q.label);
+      const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).split('-').map(Number);
+      const selects=['year','month','day'].map((part,i)=>{
+        const column=document.createElement('div'),caption=document.createElement('label'),select=document.createElement('select');
+        select.id='birth-'+part;select.size=5;select.required=q.required&&visible;select.disabled=!visible;
+        caption.htmlFor=select.id;caption.textContent=['民國年','月','日'][i];select.setAttribute('aria-label',caption.textContent);
+        column.append(caption,select);picker.append(column);return select;
+      });
+      const [year,month,day]=selects;
+      function options(select,values,suffix){const previous=select.value;select.replaceChildren(new Option('請選擇',''));values.forEach(n=>select.add(new Option(n+suffix,String(n))));select.value=values.map(String).includes(previous)?previous:'';}
+      options(year,Array.from({length:today[0]-1911},(_,i)=>today[0]-1911-i),'年');
+      function sync(changed){
+        const y=Number(year.value)+1911;
+        if(changed!==day){
+          const maxMonth=y===today[0]?today[1]:12;
+          options(month,Array.from({length:maxMonth},(_,i)=>i+1),'月');
+          const maxDay=year.value&&month.value?Math.min(new Date(Date.UTC(y,Number(month.value),0)).getUTCDate(),y===today[0]&&Number(month.value)===today[1]?today[2]:31):0;
+          options(day,Array.from({length:maxDay},(_,i)=>i+1),'日');
+        }
+        value.value=selects.every(s=>s.value)?year.value.padStart(2,'0')+month.value.padStart(2,'0')+day.value.padStart(2,'0'):'';
+        value.dispatchEvent(new Event('input',{bubbles:true}));
+      }
+      selects.forEach(select=>select.addEventListener('change',()=>sync(select)));sync(year);wrap.append(picker);
+    }else if(q.type==='radio'){
       const options=document.createElement('div');options.className='options vertical';
       for(const o of config.options.filter(o=>o.id===q.id)){const l=document.createElement('label'),input=document.createElement('input');input.type='radio';input.name=q.id;input.value=o.value;input.required=q.required&&visible;input.disabled=!visible;l.append(input,document.createTextNode(o.label));options.append(l);}wrap.append(options);
     }else{
@@ -211,7 +242,8 @@ window.loadBookingSettings = async function () {
     date.setCustomValidity(date.value && (date.value < date.min || cfg.closedWeekdays.includes(d.getUTCDay()) || cfg.closedDates.includes(date.value)) ? '請選擇至少明天起、非週六及非休診日的日期。' : '');
     const m = birth.value.match(/^(\d{2,3})(\d{2})(\d{2})$/); let valid=false;
     if (m) { const y=Number(m[1])+1911, mo=Number(m[2]), day=Number(m[3]), b=new Date(Date.UTC(y,mo-1,day)); valid=Number(m[1])>0 && b.getUTCFullYear()===y && b.getUTCMonth()===mo-1 && b.getUTCDate()===day && b.toISOString().slice(0,10)<=today(); }
-    birth.setCustomValidity(valid || !birth.value&&!birth.required ? '' : '請填寫有效的民國生日，例如 770101 或 1000101。');
+    const birthDay=document.getElementById('birth-day');
+    birthDay.setCustomValidity(valid || !birth.value&&!birthDay.required ? '' : '請完整選擇有效的民國出生年、月、日。');
     form.elements.name.setCustomValidity(form.elements.name.value.trim() || !form.elements.name.required ? '' : '請填寫姓名。');
   }
   form.addEventListener('input',()=>{validate();message.textContent='';});

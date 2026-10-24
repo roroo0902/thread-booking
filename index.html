@@ -93,6 +93,9 @@
     .birthday-actions button { min-height:64px; border-radius:18px; font-size:20px; font-weight:700; }
     .birthday-cancel { background:#f1eeea; color:#776b60; }
     .birthday-confirm { background:#704522; color:white; }
+    .birthday-dialog .birthday-error { color:#a34b2e; margin:0 0 14px; font-size:14px; }
+    .birthday-error:empty { display:none; }
+    .birthday-confirm:disabled { cursor:not-allowed; opacity:.45; }
     @media(max-width:420px) { .birthday-dialog { padding:24px 16px 18px; border-radius:26px; } .birthday-dialog h2 { font-size:23px; } .birthday-dialog .birthday-help { font-size:13px; } .birthday-row { font-size:19px; } .birthday-row.selected { font-size:22px; } .birthday-dialog .birthday-preview { font-size:16px; } .birthday-actions button { font-size:17px; min-height:54px; } }
     dialog p { line-height: 1.8; font-size: 14px; }
     dl { display: grid; grid-template-columns: 100px 1fr; gap: 14px; padding: 20px 0; border-top: 1px solid #e1e6db; border-bottom: 1px solid #e1e6db; font-size: 14px; }
@@ -169,37 +172,51 @@ window.BOOKING_CONFIG = Object.freeze({
 </script>
   <script>
 // Gregorian wheel selection; only confirmed ROC dates are submitted.
-window.createBirthdayPicker=function(wrap,label,visible,required){
-  const value=document.createElement('input');value.type='hidden';value.name='birth';value.id='birth';value.disabled=!visible;
-  const trigger=document.createElement('button');trigger.type='button';trigger.id='birth-display';trigger.className='birth-trigger';trigger.textContent='請選擇出生日期';trigger.disabled=!visible;trigger.setAttribute('aria-haspopup','dialog');label.htmlFor=trigger.id;
+window.createBirthdayPicker=function(wrap,label,visible,required,bookingConfig=null){
+  const booking=!!bookingConfig,field=booking?'date':'birth',prefix=booking?'appointment':'birthday';
+  const value=document.createElement('input');value.type='hidden';value.name=field;value.id=field;value.disabled=!visible;
+  const trigger=document.createElement('button');trigger.type='button';trigger.id=field+'-display';trigger.className='birth-trigger';trigger.textContent=booking?'請選擇預約日期':'請選擇出生日期';trigger.disabled=!visible;trigger.setAttribute('aria-haspopup','dialog');label.htmlFor=trigger.id;
   wrap.append(value,trigger);
-  const dialog=document.createElement('dialog');dialog.className='birthday-dialog';dialog.setAttribute('aria-labelledby','birthday-title');
+  const dialog=document.createElement('dialog');dialog.className='birthday-dialog';dialog.setAttribute('aria-labelledby',prefix+'-title');
   dialog.innerHTML='<h2 id="birthday-title">請選擇出生日期</h2><p class="birthday-help">請上下滑動選擇您的西元出生年月日<br>系統送出時會自動轉換為民國出生年月日</p><div class="birthday-wheels"><div class="birthday-band" aria-hidden="true"></div></div><p class="birthday-preview" aria-live="polite"></p><div class="birthday-actions"><button type="button" class="birthday-cancel">取消</button><button type="button" class="birthday-confirm">確認日期</button></div>';
+  dialog.querySelector('h2').id=prefix+'-title';
+  if(booking){dialog.querySelector('h2').textContent='請選擇預約埋線日期';dialog.querySelector('.birthday-help').textContent='請上下滑動選擇預約年、月、日。至少提前一天，週六及休診日不開放。';}
+  const error=document.createElement('p');error.className='birthday-error';error.setAttribute('role','status');dialog.querySelector('.birthday-actions').before(error);
   document.body.append(dialog);
   const now=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).split('-').map(Number);
   const height=54, columns=[], timers=[];let draft=[1990,1,1],committed=null;
   const preview=dialog.querySelector('.birthday-preview');
   const pad=n=>String(n).padStart(2,'0');
   const roc=y=>String(y-1911).padStart(3,'0');
-  function bounds(){const t=now();draft[0]=Math.max(1912,Math.min(t[0],draft[0]));const maxMonth=draft[0]===t[0]?t[1]:12;draft[1]=Math.max(1,Math.min(maxMonth,draft[1]));const maxDay=Math.min(new Date(Date.UTC(draft[0],draft[1],0)).getUTCDate(),draft[0]===t[0]&&draft[1]===t[1]?t[2]:31);draft[2]=Math.max(1,Math.min(maxDay,draft[2]));return [t[0],maxMonth,maxDay];}
-  function paint(){
-    preview.textContent=draft[0]+'/'+pad(draft[1])+'/'+pad(draft[2])+' ｜ 民國 '+roc(draft[0])+' 年';
-    columns.forEach((c,i)=>{c.el.setAttribute('aria-activedescendant','birthday-'+i+'-'+draft[i]);Array.from(c.el.children).forEach(row=>{const selected=Number(row.dataset.value)===draft[i];row.classList.toggle('selected',selected);row.setAttribute('aria-selected',String(selected));});});
+  const iso=parts=>parts[0]+'-'+pad(parts[1])+'-'+pad(parts[2]);
+  function unavailable(parts){
+    if(!booking)return '';
+    const d=new Date(iso(parts)+'T00:00:00Z');
+    if(iso(parts)<=iso(now()))return '請選擇明天或之後的日期';
+    if(bookingConfig.closedWeekdays.includes(d.getUTCDay())||bookingConfig.closedDates.includes(iso(parts)))return '此日不提供埋線服務，請選擇其他日期';
+    return '';
   }
-  function fill(i,max){const c=columns[i],min=i===0?1912:1;c.values=Array.from({length:max-min+1},(_,n)=>min+n);c.el.replaceChildren();c.values.forEach(n=>{const row=document.createElement('div');row.className='birthday-row';row.id='birthday-'+i+'-'+n;row.dataset.value=n;row.setAttribute('role','option');row.textContent=n+['年','月','日'][i];row.onclick=()=>choose(i,n);c.el.append(row);});c.el.scrollTop=(draft[i]-min)*height;}
+  function initial(){if(!booking)return [1990,1,1];const d=new Date(iso(now())+'T00:00:00Z');for(let i=0;i<3660;i++){d.setUTCDate(d.getUTCDate()+1);const p=[d.getUTCFullYear(),d.getUTCMonth()+1,d.getUTCDate()];if(!unavailable(p))return p;}return now();}
+  function bounds(){if(booking){const t=now();draft[0]=Math.max(t[0],Math.min(t[0]+100,draft[0]));draft[1]=Math.max(1,Math.min(12,draft[1]));const maxDay=new Date(Date.UTC(draft[0],draft[1],0)).getUTCDate();draft[2]=Math.max(1,Math.min(maxDay,draft[2]));return [t[0]+100,12,maxDay];}const t=now();draft[0]=Math.max(1912,Math.min(t[0],draft[0]));const maxMonth=draft[0]===t[0]?t[1]:12;draft[1]=Math.max(1,Math.min(maxMonth,draft[1]));const maxDay=Math.min(new Date(Date.UTC(draft[0],draft[1],0)).getUTCDate(),draft[0]===t[0]&&draft[1]===t[1]?t[2]:31);draft[2]=Math.max(1,Math.min(maxDay,draft[2]));return [t[0],maxMonth,maxDay];}
+  function paint(){
+    preview.textContent=draft[0]+'/'+pad(draft[1])+'/'+pad(draft[2])+(booking?' ｜ 星期'+['日','一','二','三','四','五','六'][new Date(iso(draft)+'T00:00:00Z').getUTCDay()]:' ｜ 民國 '+roc(draft[0])+' 年');
+    error.textContent=unavailable(draft);dialog.querySelector('.birthday-confirm').disabled=!!error.textContent;
+    columns.forEach((c,i)=>{c.el.setAttribute('aria-activedescendant',prefix+'-'+i+'-'+draft[i]);Array.from(c.el.children).forEach(row=>{const selected=Number(row.dataset.value)===draft[i];row.classList.toggle('selected',selected);row.setAttribute('aria-selected',String(selected));});});
+  }
+  function fill(i,max){const c=columns[i],min=i===0?(booking?now()[0]:1912):1;c.values=Array.from({length:max-min+1},(_,n)=>min+n);c.el.replaceChildren();c.values.forEach(n=>{const row=document.createElement('div');row.className='birthday-row';row.id=prefix+'-'+i+'-'+n;row.dataset.value=n;row.setAttribute('role','option');row.textContent=n+['年','月','日'][i];row.onclick=()=>choose(i,n);c.el.append(row);});c.el.scrollTop=(draft[i]-min)*height;}
   function choose(i,n){draft[i]=n;const max=bounds();for(let j=i+1;j<3;j++)fill(j,max[j]);columns[i].el.scrollTop=columns[i].values.indexOf(draft[i])*height;paint();}
   function settle(i){if(!dialog.open)return;const c=columns[i],index=Math.max(0,Math.min(c.values.length-1,Math.round(c.el.scrollTop/height)));if(draft[i]!==c.values[index])choose(i,c.values[index]);else paint();}
   ['西元年','月份','日期'].forEach((name,i)=>{const el=document.createElement('div');el.className='birthday-wheel';el.tabIndex=0;el.setAttribute('role','listbox');el.setAttribute('aria-label',name);columns.push({el,values:[]});dialog.querySelector('.birthday-wheels').append(el);el.addEventListener('scroll',()=>{clearTimeout(timers[i]);timers[i]=setTimeout(()=>settle(i),90);});el.addEventListener('keydown',e=>{const c=columns[i],index=c.values.indexOf(draft[i]);let next;if(e.key==='ArrowDown')next=index+1;else if(e.key==='ArrowUp')next=index-1;else if(e.key==='PageDown')next=index+5;else if(e.key==='PageUp')next=index-5;else if(e.key==='Home')next=0;else if(e.key==='End')next=c.values.length-1;else return;e.preventDefault();choose(i,c.values[Math.max(0,Math.min(c.values.length-1,next))]);});});
-  function open(){draft=committed?[...committed]:[1990,1,1];dialog.showModal();const max=bounds();columns.forEach((_,i)=>fill(i,max[i]));paint();columns[0].el.focus({preventScroll:true});}
+  function open(){draft=committed?[...committed]:initial();dialog.showModal();const max=bounds();columns.forEach((_,i)=>fill(i,max[i]));paint();columns[0].el.focus({preventScroll:true});}
   trigger.onclick=open;
   dialog.querySelector('.birthday-cancel').onclick=()=>dialog.close();
   dialog.addEventListener('close',()=>{timers.forEach(clearTimeout);trigger.focus({preventScroll:true});});
   dialog.querySelector('.birthday-confirm').onclick=()=>{
     // Read all three current positions together, including a wheel still settling.
-    draft=columns.map(c=>c.values[Math.max(0,Math.min(c.values.length-1,Math.round(c.el.scrollTop/height)))]);bounds();committed=[...draft];
-    value.value=roc(draft[0])+pad(draft[1])+pad(draft[2]);trigger.textContent=draft[0]+'/'+pad(draft[1])+'/'+pad(draft[2])+'（民國 '+roc(draft[0])+' 年）';trigger.removeAttribute('aria-invalid');dialog.close();value.dispatchEvent(new Event('input',{bubbles:true}));
+    draft=columns.map(c=>c.values[Math.max(0,Math.min(c.values.length-1,Math.round(c.el.scrollTop/height)))]);bounds();if(unavailable(draft)){paint();return;}committed=[...draft];
+    value.value=booking?iso(draft):roc(draft[0])+pad(draft[1])+pad(draft[2]);trigger.textContent=draft[0]+'/'+pad(draft[1])+'/'+pad(draft[2])+(booking?'':'（民國 '+roc(draft[0])+' 年）');trigger.removeAttribute('aria-invalid');dialog.close();value.dispatchEvent(new Event('input',{bubbles:true}));
   };
-  window.validateBirthday=()=>{if(visible&&required&&!value.value){trigger.setAttribute('aria-invalid','true');open();return false;}return true;};
+  window[booking?'validateAppointment':'validateBirthday']=()=>{if(visible&&((required&&!value.value)||(booking&&value.value&&unavailable(value.value.split('-').map(Number))))){trigger.setAttribute('aria-invalid','true');open();return false;}return true;};
 };
 
 </script>
@@ -232,6 +249,8 @@ window.loadBookingSettings = async function () {
     const label=document.createElement(q.type==='radio'?'legend':'label');label.textContent=q.label+(q.required&&visible?' *':'');if(q.type!=='radio')label.htmlFor=q.id;wrap.append(label);
     if(q.id==='birth'){
       window.createBirthdayPicker(wrap,label,visible,q.required);
+    }else if(q.id==='date'){
+      window.createBirthdayPicker(wrap,label,visible,q.required,config);
     }else if(q.type==='radio'){
       const options=document.createElement('div');options.className='options vertical';
       for(const o of config.options.filter(o=>o.id===q.id)){const l=document.createElement('label'),input=document.createElement('input');input.type='radio';input.name=q.id;input.value=o.value;input.required=q.required&&visible;input.disabled=!visible;l.append(input,document.createTextNode(o.label));options.append(l);}wrap.append(options);
@@ -279,7 +298,7 @@ window.loadBookingSettings = async function () {
   }
   form.addEventListener('input',()=>{validate();message.textContent='';});
   form.addEventListener('submit',e=>{
-    e.preventDefault();validate();if(!window.validateBirthday()||!form.reportValidity())return;
+    e.preventDefault();validate();if(!window.validateBirthday()||!window.validateAppointment()||!form.reportValidity())return;
     payload=Object.fromEntries(new FormData(form));payload.requestId=receiptId;
     for(const key of ['name','birth','phone','date','session','medicine','lineName','notes'])payload[key]=payload[key]||'';
     const labels=Object.fromEntries(control.questions.filter(q=>q.visible&&q.id!=='userId'&&(q.id!=='lineName'||String(control.settings.show_line_name).toUpperCase()==='TRUE')).map(q=>[q.id,q.label]));

@@ -38,6 +38,9 @@
     .note { text-align: left; padding: 22px 26px; }
     .note strong { display: inline-block; margin-bottom: 5px; color: #35694b; font-size: 17px; }
     .notice { background: #fff3d8; color: #7b5b24; padding: 14px; border-radius: 12px; line-height: 1.6; font-size: 14px; }
+    .announcement-important { background:#fff2dc; border:2px solid #a06c30; color:#53391e; }
+    .announcement-important strong { color:#633d16; }
+    .announcement-image { display:block; width:100%; height:auto; border-radius:12px; margin-top:12px; }
     .health { text-align: left; margin: 20px 0 30px; color: #5d675b; font-size: 14px; line-height: 1.8; }
     summary { cursor: pointer; font-weight: 600; }
     form { text-align: left; }
@@ -241,7 +244,20 @@ window.loadBookingSettings = async function () {
   if(imageURL(s.logo_url)){const img=document.createElement('img');img.src=imageURL(s.logo_url);img.alt=s.clinic_name||'診所';img.style.cssText='max-width:120px;max-height:90px';document.querySelector('.brand').before(img);}
   document.querySelectorAll('#bookingPage > .note,#bookingPage > .health').forEach(e=>e.remove());
   const form=document.querySelector('form'), notices=document.createElement('div');notices.id='announcements';
-  for(const a of config.announcements){const box=document.createElement('section'),title=document.createElement('strong'),body=document.createElement('p');box.className=a.type==='warning'?'note notice':'note';title.textContent=a.title;body.textContent=a.text;body.style.whiteSpace='pre-wrap';body.style.margin='6px 0 0';if(a.bold)body.style.fontWeight='600';box.append(title,body);notices.append(box);}
+  for(const a of config.announcements){
+    if(!String(a.text||'').trim())continue;
+    const box=document.createElement('section'),title=document.createElement('strong');
+    box.className='note'+(a.type==='important'?' announcement-important':a.type==='warning'?' notice':'');title.textContent=a.title;box.append(title);
+    if(a.type==='image'){
+      const url=imageURL(String(a.text).trim());if(!url)continue;
+      const img=document.createElement('img');img.className='announcement-image';img.alt=a.title||'最新消息';img.loading='lazy';img.decoding='async';img.referrerPolicy='no-referrer';
+      const fallback=document.createElement('p');fallback.hidden=true;fallback.textContent='圖片暫時無法載入，請稍後再試。';
+      img.onerror=()=>{img.hidden=true;fallback.hidden=false;};img.src=url;box.append(img,fallback);
+    }else{
+      const body=document.createElement('p');body.textContent=a.text;body.style.whiteSpace='pre-wrap';body.style.margin='6px 0 0';if(a.bold)body.style.fontWeight='600';box.append(body);
+    }
+    notices.append(box);
+  }
   form.before(notices);
   const consent=form.querySelector('.consent');form.querySelectorAll('.card').forEach(e=>e.remove());
   const card=document.createElement('section');card.className='card';const heading=document.createElement('h2');heading.textContent='預約資料';card.append(heading);

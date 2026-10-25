@@ -267,6 +267,11 @@ window.loadBookingSettings = async function () {
     const visible=q.visible&&(q.id!=='lineName'||yes(s.show_line_name));
     const wrap=document.createElement(q.type==='radio'?'fieldset':'div');wrap.hidden=!visible;
     const label=document.createElement(q.type==='radio'?'legend':'label');label.textContent=q.label+(q.required&&visible?' *':'');if(q.type!=='radio')label.htmlFor=q.id;wrap.append(label);
+    if(visible&&q.showImage&&imageURL(q.imageUrl)){
+      const img=document.createElement('img');img.className='announcement-image question-image';img.alt=q.id==='session'?'埋線醫師排班表':q.label+'說明圖片';img.loading='lazy';img.decoding='async';img.referrerPolicy='no-referrer';
+      const error=document.createElement('small');error.hidden=true;error.textContent='圖片暫時無法載入，請稍後重試或向診所確認。';
+      img.onerror=()=>{img.hidden=true;error.hidden=false;};img.src=imageURL(q.imageUrl);wrap.append(img,error);
+    }
     if(q.id==='birth'){
       window.createBirthdayPicker(wrap,label,visible,q.required);
     }else if(q.id==='date'){

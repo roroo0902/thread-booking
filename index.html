@@ -108,7 +108,14 @@
     dl { display: grid; grid-template-columns: 100px 1fr; gap: 14px; padding: 20px 0; border-top: 1px solid #e1e6db; border-bottom: 1px solid #e1e6db; font-size: 14px; }
     dt { color: #77816f; } dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
     .actions { display: flex; gap: 12px; } .actions button { flex: 1; }
-    #reviewStatus { color: #855e29; } #receipt { overflow-wrap: anywhere; }
+    #reviewStatus { color: #855e29; }
+    #success p { line-height: 1.8; }
+    .success-actions { display: grid; gap: 12px; margin-top: 24px; }
+    .success-actions a { display: flex; align-items: center; justify-content: center; min-height: 52px; padding: 15px 20px; border: 2px solid #35694b; border-radius: 12px; background: #35694b; color: #fff; -webkit-text-fill-color: currentColor; text-decoration: none; font-size: 16px; font-weight: 700; }
+    .success-actions a:hover { background: #28533b; }
+    .success-actions a:last-child { background: #edf1e9; color: #28533b; }
+    .success-actions a:last-child:hover { background: #dde7d7; }
+    .success-actions a:focus-visible { outline: 3px solid #b38a45; outline-offset: 4px; }
     @media(max-width: 520px) { body { padding: 28px 16px; } .card { padding: 22px 18px; } .grid { grid-template-columns: 1fr; gap: 0; } .options { flex-direction: column; } .note { padding: 20px; } }
   </style>
 </head>
@@ -164,7 +171,15 @@
       <label class="consent"><input type="checkbox" name="consent" value="yes" required><span>我已閱讀預約規範，了解此表單不提供門診預約號碼；如需看診拿藥，須另外掛號。我同意診所使用本次填寫資料處理預約及相關聯繫。 *</span></label>
       <button class="primary" type="submit">確認預約資料 <span aria-hidden="true">→</span></button><p class="footnote">送出前還可以再次確認內容。</p>
     </form>
-    <section id="success" class="card" tabindex="-1" hidden><h2>已收到您的預約申請</h2><p>資料已送交診所，實際安排以診所確認為準。</p><p id="receipt"></p><p>這不是門診預約號碼。如需看診拿藥，請另行掛號。</p></section>
+    <section id="success" class="card" tabindex="-1" hidden>
+      <h2>已收到您的預約申請</h2>
+      <p>資料已送交診所，實際安排以診所確認為準。</p>
+      <p>若需要預約門診，請至官方 LINE 上進行預約。</p>
+      <nav class="success-actions" aria-label="其他預約服務">
+        <a href="https://lin.ee/KLtKOz0">預約門診看診</a>
+        <a href="https://liff.line.me/2011216294-Ug0co1AC">預約直接拿藥</a>
+      </nav>
+    </section>
     <footer>瑞恩中醫 · 埋線預約<br>用心照護，從每一次相約開始。</footer>
   </main>
   <dialog id="review" aria-labelledby="reviewTitle"><h2 id="reviewTitle">確認您的預約資料</h2><p>請檢查姓名、手機與預約日期是否正確。</p><dl id="summary"></dl><p id="reviewStatus" role="status" aria-live="polite"></p><div class="actions"><button type="button" id="edit" class="secondary">返回修改</button><button type="button" id="send" class="primary">確認送出</button></div></dialog>
@@ -343,7 +358,7 @@ window.loadBookingSettings = async function () {
       const response=await fetch(cfg.apiUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({...payload,action:'booking',idToken:window.liff.getIDToken()}),signal:AbortSignal.timeout(25000),redirect:'follow'});
       const result=await response.json();
       if(!response.ok || result.ok!==true || result.requestId!==payload.requestId)throw new Error(result.error||'未取得有效回覆');
-      review.close();form.hidden=true;document.getElementById('success').hidden=false;document.getElementById('receipt').textContent='資料收件編號：'+result.requestId;document.getElementById('success').focus();
+      review.close();form.hidden=true;document.getElementById('success').hidden=false;document.getElementById('success').focus();
     }catch(error){document.getElementById('reviewStatus').textContent=(control.settings.error_message||'送出未完成')+'：'+error.message+'。請勿視為預約成功；可重試或聯繫診所確認。';}
     finally{busy=false;send.disabled=false;document.getElementById('edit').disabled=false;}
   };
